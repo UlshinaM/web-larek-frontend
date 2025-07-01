@@ -1,1 +1,196 @@
+import { ApiForApp } from './components/ApiForApp';
+import { Api } from './components/base/api';
+import { EventEmitter, IEvents } from './components/base/events';
+import { Card } from './components/Card';
+import { CardsData } from './components/CardsData';
+import { UserData } from './components/UserData';
 import './scss/styles.scss';
+import { TPayMethod } from './types';
+import { API_URL, CDN_URL, settings } from './utils/constants';
+
+//константы для проверки работы моделей данных
+const cardsArrayForTest = [
+        {
+            "id": "854cef69-976d-4c2a-a18c-2aa45046c390",
+            "description": "Если планируете решать задачи в тренажёре, берите два.",
+            "image": "/5_Dots.svg",
+            "title": "+1 час в сутках",
+            "category": "софт-скил",
+            "price": 750
+        },
+        {
+            "id": "c101ab44-ed99-4a54-990d-47aa2bb4e7d9",
+            "description": "Лизните этот леденец, чтобы мгновенно запоминать и узнавать любой цветовой код CSS.",
+            "image": "/Shell.svg",
+            "title": "HEX-леденец",
+            "category": "другое",
+            "price": 1450
+        },
+        {
+            "id": "b06cde61-912f-4663-9751-09956c0eed67",
+            "description": "Будет стоять над душой и не давать прокрастинировать.",
+            "image": "/Asterisk_2.svg",
+            "title": "Мамка-таймер",
+            "category": "софт-скил",
+            "price": null
+        },
+        {
+            "id": "412bcf81-7e75-4e70-bdb9-d3c73c9803b7",
+            "description": "Откройте эти куки, чтобы узнать, какой фреймворк вы должны изучить дальше.",
+            "image": "/Soft_Flower.svg",
+            "title": "Фреймворк куки судьбы",
+            "category": "дополнительное",
+            "price": 2500
+        },
+        {
+            "id": "1c521d84-c48d-48fa-8cfb-9d911fa515fd",
+            "description": "Если орёт кот, нажмите кнопку.",
+            "image": "/mute-cat.svg",
+            "title": "Кнопка «Замьютить кота»",
+            "category": "кнопка",
+            "price": 2000
+        },
+        {
+            "id": "f3867296-45c7-4603-bd34-29cea3a061d5",
+            "description": "Чтобы научиться правильно называть модификаторы, без этого не обойтись.",
+            "image": "Pill.svg",
+            "title": "БЭМ-пилюлька",
+            "category": "другое",
+            "price": 1500
+        },
+        {
+            "id": "54df7dcb-1213-4b3c-ab61-92ed5f845535",
+            "description": "Измените локацию для поиска работы.",
+            "image": "/Polygon.svg",
+            "title": "Портативный телепорт",
+            "category": "другое",
+            "price": 100000
+        },
+        {
+            "id": "6a834fb8-350a-440c-ab55-d0e9b959b6e3",
+            "description": "Даст время для изучения React, ООП и бэкенда",
+            "image": "/Butterfly.svg",
+            "title": "Микровселенная в кармане",
+            "category": "другое",
+            "price": 750
+        },
+        {
+            "id": "48e86fc0-ca99-4e13-b164-b98d65928b53",
+            "description": "Очень полезный навык для фронтендера. Без шуток.",
+            "image": "Leaf.svg",
+            "title": "UI/UX-карандаш",
+            "category": "хард-скил",
+            "price": 10000
+        },
+        {
+            "id": "90973ae5-285c-4b6f-a6d0-65d1d760b102",
+            "description": "Сжимайте мячик, чтобы снизить стресс от тем по бэкенду.",
+            "image": "/Mithosis.svg",
+            "title": "Бэкенд-антистресс",
+            "category": "другое",
+            "price": 1000
+        }
+];
+const userObjectForTest = {payment: "online",
+    email: "test@test.ru",
+    phone: "+71234567890",
+    address: "Spb Vosstania 1",
+    total: 2200,
+    items: [
+        "854cef69-976d-4c2a-a18c-2aa45046c390",
+        "c101ab44-ed99-4a54-990d-47aa2bb4e7d9"
+    ]
+};
+const testEvents = new EventEmitter();  
+
+const events: IEvents = new EventEmitter();
+
+
+//API для общения с сервером
+const api = new Api(API_URL, settings);
+const apiForApp = new ApiForApp(api, CDN_URL);
+
+//Объекты - модели данных
+const cardsData = new CardsData(events);
+const userData = new UserData(events);
+
+//Темплейтs карточки
+const cardTemplate: HTMLTemplateElement = document.querySelector('#card-catalog');
+const cardModalTemplate: HTMLTemplateElement = document.querySelector('#card-preview');
+const cardBasketTemplate: HTMLTemplateElement = document.querySelector('#card-basket');
+
+//Куда встраивать карточку
+const mainSection: HTMLElement = document.querySelector('.gallery');
+const modalPopup: HTMLDivElement = document.querySelector('.modal');
+const popupContent: HTMLDivElement = modalPopup.querySelector('.modal__content');
+
+testEvents.onAll((evt) => {console.log(evt.eventName, evt.data)});
+
+cardsData.cards = cardsArrayForTest;
+const cardForTest = cardsData.getCard('412bcf81-7e75-4e70-bdb9-d3c73c9803b7');
+
+//проверяем отображение карточки товара по переданным данным
+const card = new Card(cardBasketTemplate, events, {onClick: (event: MouseEvent) => testEvents.emit('button:toBasket', {card: cardForTest.id})});
+card.title = cardForTest.title;
+card.id = cardForTest.id;
+//card.image = 'https://larek-api.nomoreparties.co/content/weblarek' + cardForTest.image;
+//card.category = cardForTest.category;
+card.price = cardForTest.price;
+//card.description = cardForTest.description;
+modalPopup.classList.add('modal_active');
+popupContent.append(card.render())
+
+apiForApp.getCards()
+    .then((cardsArray) => {
+        cardsData.cards = cardsArray;
+        //userData.total = cardsData.getTotalPrice(userData.getUserBasket().items);
+        // работает apiForApp.postOrderUserData(userData.getUserOrderInfo());
+        // работает console.log(cardsData.getCard(cardsData.selectedCard), cardsData.cards);
+        /* работает
+        const cards: Card[] = [];
+        cardsData.cards.forEach((cardDat, index) => {
+            cards[index] = new Card(cardTemplate, events, {onClick: (event: MouseEvent) => testEvents.emit('card:select', {card: cardDat})});
+            cards[index].title = cardDat.title;
+            cards[index].id = cardDat.id;
+            cards[index].image = cardDat.image;
+            cards[index].category = cardDat.category;
+            cards[index].price = cardDat.price;
+            mainSection.append(cards[index].render());
+        });
+        */
+    })
+    .catch((error) => {
+        console.log(error);
+    });
+
+
+//работает console.log(apiForApp.getTheCard('412bcf81-7e75-4e70-bdb9-d3c73c9803b7'));
+//cardsData.selectedCard = "b06cde61-912f-4663-9751-09956c0eed67";
+//console.log(/*cardsData.getCard(cardsData.selectedCard), */cardsData.cards);
+/*userData.setUserInfo({
+    payment: userObjectForTest.payment as TPayMethod,
+    address: userObjectForTest.address
+});
+//console.log(userData.getUserInfo());
+
+userData.setUserInfo({
+    email: userObjectForTest.email,
+    phone: userObjectForTest.phone
+});
+//console.log(userData.getUserInfo());
+
+userData.addProductToBasket(userObjectForTest.items[0]);
+userData.addProductToBasket(userObjectForTest.items[1]);
+userData.addProductToBasket("412bcf81-7e75-4e70-bdb9-d3c73c9803b7");
+
+//userData.total = cardsData.getTotalPrice(userData.getUserBasket().items);
+//userData.total = cardsData.getTotalPrice(userData.getUserBasket().items);
+//console.log(userData.getUserBasket());
+
+userData.deleteProductFromBasket(userObjectForTest.items[0]);
+
+//console.log(userData.getUserBasket(), userData.total);
+
+//userData.clearUserBasket();
+//console.log(userData);
+*/

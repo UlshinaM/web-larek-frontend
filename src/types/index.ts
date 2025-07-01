@@ -31,6 +31,7 @@ export interface IUserData {
     setUserInfo(userInfo: TUserPayAddress | TUserContact | TUserBasket): void;
     getUserBasket(): TUserBasket;
     checkUserValidation(data: TUserBasket | TUserPayAddress | TUserContact): boolean;
+    clearUserBasket(): void;
 }
 
 //В ответ на POST-запрос с сервера будет приходить объект с информацией о заказе
@@ -52,6 +53,8 @@ export type TUserContact = Pick<IUser, 'email' | 'phone'>;
 
 export type TUserBasket = Pick<IUser, 'items' | 'total'>;
 
+//export type TUserOptionalData = TUserBasket | TUserPayAddress | TUserContact;
+
 //Данные, которые понадобятся при работе с корзиной (открытие корзины или количество товаров в иконке на главной странице)
 export interface IBasket { //учесть возвможность пустой корзины
     products: TCardBasket[];
@@ -61,3 +64,19 @@ export interface IBasket { //учесть возвможность пустой 
 
 //Объект для хранения сообщений об ошибках по полям заказа
 export type FormErrors = Partial<Record<keyof IUser, string>>;
+
+//Типизация для работы с API
+export type ApiListResponse<Type> = {
+    total: number,
+    items: Type[]
+};
+
+export type ApiPostMethods = 'POST' | 'PUT' | 'DELETE';
+
+//выполним не прямое наследование полученного с репозиторием класса Api, а композицию, для этого создадим интерфейс, где запишем, что нам понадобится в нашем классе
+export interface IApi {
+    baseUrl: string;
+    get<T>(uri: string): Promise<T>;
+    //метод запроса - опциональный параметр, по умолчанию в классе будет задаваться, как POST
+    post<T>(uri: string, data: object, method?: ApiPostMethods): Promise<T>;
+}
