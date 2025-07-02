@@ -16,7 +16,7 @@ export interface ICardsCatalog {
     getCard(cardId: string): ICard; //для просмотра в попапе, например
 }
 
-export type TPayMethod = 'online' | 'cash';
+export type TPayMethod = 'card' | 'cash';
 //Данные о пользователе, кототрые пойдут на сервер в POST-запросе
 export interface IUser {
     payment: TPayMethod;

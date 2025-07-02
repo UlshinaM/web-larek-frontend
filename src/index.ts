@@ -2,11 +2,14 @@ import { ApiForApp } from './components/ApiForApp';
 import { Api } from './components/base/api';
 import { EventEmitter, IEvents } from './components/base/events';
 import { Card } from './components/Card';
+import { CardsContainer } from './components/CardsContainer';
 import { CardsData } from './components/CardsData';
+import { Page } from './components/Page';
 import { UserData } from './components/UserData';
 import './scss/styles.scss';
 import { TPayMethod } from './types';
 import { API_URL, CDN_URL, settings } from './utils/constants';
+import { cloneTemplate } from './utils/utils';
 
 //константы для проверки работы моделей данных
 const cardsArrayForTest = [
@@ -101,9 +104,9 @@ const userObjectForTest = {payment: "online",
         "c101ab44-ed99-4a54-990d-47aa2bb4e7d9"
     ]
 };
-const testEvents = new EventEmitter();  
+//const testEvents = new EventEmitter();  
 
-const events: IEvents = new EventEmitter();
+const events/*: IEvents*/ = new EventEmitter();
 
 
 //API для общения с сервером
@@ -114,31 +117,53 @@ const apiForApp = new ApiForApp(api, CDN_URL);
 const cardsData = new CardsData(events);
 const userData = new UserData(events);
 
-//Темплейтs карточки
+//Темплейты карточки
 const cardTemplate: HTMLTemplateElement = document.querySelector('#card-catalog');
 const cardModalTemplate: HTMLTemplateElement = document.querySelector('#card-preview');
 const cardBasketTemplate: HTMLTemplateElement = document.querySelector('#card-basket');
 
+//Темплейт модального окна
+
+//Темплейт форм и подтверждения
+
+//Темплейт корзины
+
 //Куда встраивать карточку
 const mainSection: HTMLElement = document.querySelector('.gallery');
 const modalPopup: HTMLDivElement = document.querySelector('.modal');
-const popupContent: HTMLDivElement = modalPopup.querySelector('.modal__content');
+const mainPage: HTMLBodyElement = document.querySelector('.page');
+//const popupContent: HTMLDivElement = modalPopup.querySelector('.modal__content');
 
-testEvents.onAll((evt) => {console.log(evt.eventName, evt.data)});
+events.onAll((evt) => {console.log(evt.eventName, evt.data)});
 
-cardsData.cards = cardsArrayForTest;
-const cardForTest = cardsData.getCard('412bcf81-7e75-4e70-bdb9-d3c73c9803b7');
+//cardsData.cards = cardsArrayForTest;
+//const cardForTest = cardsData.getCard('412bcf81-7e75-4e70-bdb9-d3c73c9803b7');
 
 //проверяем отображение карточки товара по переданным данным
-const card = new Card(cardBasketTemplate, events, {onClick: (event: MouseEvent) => testEvents.emit('button:toBasket', {card: cardForTest.id})});
-card.title = cardForTest.title;
-card.id = cardForTest.id;
+//const card = new Card(cloneTemplate(cardTemplate), events, {onClick: (event: MouseEvent) => testEvents.emit('button:toBasket', {card: cardForTest.id})});
+//const card2 = new Card(cloneTemplate(cardTemplate), events, {onClick: (event: MouseEvent) => testEvents.emit('button:toBasket', {card: cardForTest.id})});
+
+//const cardArr = [];
+//cardArr.push(card.render(cardsArrayForTest[0]));
+//cardArr.push(card2.render(cardsArrayForTest[2]));
+//const cardsContainer = new CardsContainer(mainSection);
+const page = new Page(mainPage, events);
+//cardsContainer.render({cardsCatalog: cardArr});
+
+//card.title = cardForTest.title;
+//card.id = cardForTest.id;
 //card.image = 'https://larek-api.nomoreparties.co/content/weblarek' + cardForTest.image;
 //card.category = cardForTest.category;
-card.price = cardForTest.price;
+//card.price = cardForTest.price;
 //card.description = cardForTest.description;
-modalPopup.classList.add('modal_active');
-popupContent.append(card.render())
+//modalPopup.classList.add('modal_active');
+//console.log(card.render(cardsArrayForTest[0]));
+//popupContent.append(card.render(cardsArrayForTest[0]));
+//card2.basketItem = 2;
+
+//card.render({}, true);
+
+//card.setCardButtonText('Убрать из корзины');
 
 apiForApp.getCards()
     .then((cardsArray) => {
@@ -158,39 +183,20 @@ apiForApp.getCards()
             mainSection.append(cards[index].render());
         });
         */
+        events.emit('cardData:loaded');
     })
     .catch((error) => {
         console.log(error);
     });
 
+events.on('cardData:loaded', () => {
+    const cardElements = cardsData.cards.map((card) => {
+        const cardItem = new Card(cloneTemplate(cardTemplate), events);
+        return cardItem.render(card);
+    });
 
-//работает console.log(apiForApp.getTheCard('412bcf81-7e75-4e70-bdb9-d3c73c9803b7'));
-//cardsData.selectedCard = "b06cde61-912f-4663-9751-09956c0eed67";
-//console.log(/*cardsData.getCard(cardsData.selectedCard), */cardsData.cards);
-/*userData.setUserInfo({
-    payment: userObjectForTest.payment as TPayMethod,
-    address: userObjectForTest.address
+    page.render({gallery: cardElements,
+        counter: userData.getUserBasket().items.length ?? 0,
+        locked: false
+    });
 });
-//console.log(userData.getUserInfo());
-
-userData.setUserInfo({
-    email: userObjectForTest.email,
-    phone: userObjectForTest.phone
-});
-//console.log(userData.getUserInfo());
-
-userData.addProductToBasket(userObjectForTest.items[0]);
-userData.addProductToBasket(userObjectForTest.items[1]);
-userData.addProductToBasket("412bcf81-7e75-4e70-bdb9-d3c73c9803b7");
-
-//userData.total = cardsData.getTotalPrice(userData.getUserBasket().items);
-//userData.total = cardsData.getTotalPrice(userData.getUserBasket().items);
-//console.log(userData.getUserBasket());
-
-userData.deleteProductFromBasket(userObjectForTest.items[0]);
-
-//console.log(userData.getUserBasket(), userData.total);
-
-//userData.clearUserBasket();
-//console.log(userData);
-*/
