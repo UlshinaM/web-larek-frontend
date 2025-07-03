@@ -28,10 +28,11 @@ export class Form<T> extends ViewComponent<IFormState> {
 
         this._paymentButton.forEach((payButton) => {
             payButton.addEventListener('click', (evt) => {
-                this.events.emit(`${this.formName}payment:input`);
                 const target = evt.target as HTMLButtonElement;
                 //добавить выбранной по target кнопке стилей
+                target.classList.add('button_alt-active');
                 this._payment = target.getAttribute('name') as TPayMethod;
+                this.events.emit(`${this.formName}payment:input`, {payment: target.getAttribute('name')});
             });
         });
 
@@ -45,7 +46,7 @@ export class Form<T> extends ViewComponent<IFormState> {
         this.container.addEventListener('input', (evt: InputEvent) => {
             const target = evt.target as HTMLInputElement;
             const field = target.getAttribute('name');
-            const value = target.getAttribute('value');
+            const value = target.value;
             this.events.emit(`${this.formName}:input`, {field, value});
         });
     }
@@ -75,7 +76,7 @@ export class Form<T> extends ViewComponent<IFormState> {
     }
 
     //расширяем родительский метод
-    render(formState: Partial<T> & IFormState) {
+    render(formState: Partial<T> & Partial<IFormState>) {
         const {valid, errors, ...inputs} = formState;
         super.render({valid, errors});
         Object.assign(this, inputs);
@@ -87,6 +88,11 @@ export class Form<T> extends ViewComponent<IFormState> {
         this.container.reset();
         if (this._payment) {
             //убрать у выбранной кнопки стили по toggle по name из _payment
+            this._paymentButton.forEach((paymentButton) => {
+                if (paymentButton.classList.contains('button_alt-active')) {
+                    paymentButton.classList.remove('button_alt-active');
+                }
+            });
             this._payment = null;
         }
     };

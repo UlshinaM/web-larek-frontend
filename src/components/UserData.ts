@@ -14,11 +14,12 @@ export class UserData implements IUserData { //все методы на "удо�
         this.events = events;
     }
 
-    setUserInfo(userInfo: /*TUserBasket |*/ TUserPayAddress | TUserContact): void {
+    setUserInfo(userInfo: /*TUserBasket |*/ Partial<TUserPayAddress> & Partial<TUserContact>): void {
         //if (this.checkUserValidation(userInfo)) {
             if ('address' in userInfo) {
-                this.payment = userInfo.payment;
                 this.address = userInfo.address;
+            } else if ('payment' in userInfo) {
+                this.payment = userInfo.payment;
             } else if ('email' in userInfo) {
                 this.email = userInfo.email;
                 this.phone = userInfo.phone;
@@ -29,31 +30,30 @@ export class UserData implements IUserData { //все методы на "удо�
             //}
         //} else {
         //    console.log('Попытка ввода некорректных данных');
-        //}    
+        //}
+        Object.assign(this, userInfo);
     }
 
     addProductToBasket(productId: string): void {
         this.items.push(productId);
-        this.events.emit('basket:change');
+        //this.events.emit('basket:change');
     }
 
     deleteProductFromBasket(productId: string): void {
         this.items = this.items.filter(cardId => cardId !== productId);
-        this.events.emit('basket:change');
+        //this.events.emit('basket:change');
     }
 
     set total(totalPrice: number | null) {
         this._total = totalPrice;
     }
 
-    get total() {
-        return this._total;
-    }
+    //get total() {
+    //    return this._total;
+    //}
 
-    getUserBasket(): TUserBasket {
-        return {total: this._total,
-            items: this.items
-        }
+    getUserBasketProducts(): string[] {
+        return this.items;
     }
 
     getUserOrderInfo(): IUser {
@@ -66,21 +66,34 @@ export class UserData implements IUserData { //все методы на "удо�
         }
     }
 
-    checkUserValidation(data: TUserBasket | TUserPayAddress | TUserContact): boolean {
+    checkUserValidation(data: Partial<TUserPayAddress> | Partial<TUserContact>): void {
         if ('address' in data) {
-            this.events.emit('formPayAddressValidation:change');
-            return !!(!!data.address && !!data.payment)
+        //    this.events.emit('formPayAddressValidation:change', {validStatus: !!(!!data.address && !!data.payment)});
+        //    //return !!(!!data.address && !!data.payment)
+        //}
+            if (!!data.address && !!data.payment) {
+                this.events.emit('formOrder:change', {validStatus: true, errors: ''});
+            } else {
+                this.events.emit('formOrder:change', {validStatus: false, errors: '*Заполните данные'});
+            }
         }
 
         if ('email' in data) {
-            this.events.emit('formContactValidation:change');
-            return !!(!!data.email && !!data.phone)
+            if (!!data.email && !!data.phone) {
+                this.events.emit('formContacts:change', {validStatus: true, errors: ''});
+            } else {
+                this.events.emit('formContacts:change', {validStatus: false, errors: '*Заполните данные'});
+            }
         }
+        //if ('email' in data) {
+        //    this.events.emit('formContactValidation:change', {validStatus: !!(!!data.email && !!data.phone)});
+            //return !!(!!data.email && !!data.phone)
+        //}
 
-        if ('total' in data) {
-            this.events.emit('formBasketValidation:change');
-            return !!(data.total)
-        }
+        //if ('total' in data) {
+        //    this.events.emit('formBasketValidation:change');
+        //    return !!(data.total)
+        //}
     }
 
     clearUserBasket(): void {

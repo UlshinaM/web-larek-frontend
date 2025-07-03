@@ -28,9 +28,9 @@ export interface IUser {
 }
 
 export interface IUserData {
-    setUserInfo(userInfo: TUserPayAddress | TUserContact | TUserBasket): void;
-    getUserBasket(): TUserBasket;
-    checkUserValidation(data: TUserBasket | TUserPayAddress | TUserContact): boolean;
+    setUserInfo(userInfo: Partial<TUserPayAddress> | TUserContact | TUserBasket): void;
+    getUserBasketProducts(): string[];
+    checkUserValidation(data: Partial<TUserPayAddress> & Partial<TUserContact>): void;
     clearUserBasket(): void;
 }
 

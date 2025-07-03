@@ -13,7 +13,7 @@ export class CardsData implements ICardsCatalog { //все методы на "у
     // Сохранить и выдать массив карточек товаров
     set cards(cards: ICard[]) {
         this._cards = cards;
-        this.events.emit('cards:change'); //может понадобиться, если список товаров будет обновляться
+        //this.events.emit('cards:change'); //может понадобиться, если список товаров будет обновляться
     }
 
     get cards() {
@@ -23,7 +23,7 @@ export class CardsData implements ICardsCatalog { //все методы на "у
     //Сохранить Id кликнутой карточки и сообщить, что она была выбрана
     set selectedCard(cardId: string) {
         this._selectedCard = cardId;
-        this.events.emit('card:select');
+        //this.events.emit('card:select');
     }
     //получить id выбранной карточки для последующей обработки, например, для открытия карточки в модальном окне или добавлении товара в корзину
     get selectedCard() {

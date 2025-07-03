@@ -3,7 +3,7 @@ import { IEvents } from "./base/events";
 import { ViewComponent } from "./ViewComponent";
 
 interface IBasketView {
-    cards: HTMLLIElement[];
+    cards: HTMLElement[];
     total: number;
 }
 
@@ -31,8 +31,9 @@ export class Basket extends ViewComponent<IBasketView> {
     set cards(basketProducts: HTMLLIElement[]) {
         if (basketProducts.length) {
             this._list.replaceChildren(...basketProducts);
+            this._buttonOrder.disabled = false;
         } else {
-            this.container.replaceChild(this._list, createElement('p', {textContent: 'В корзине пока нет товаров'}));
+            this._list.replaceChildren(createElement('p', {textContent: 'В корзине пока нет товаров'}));
             this._buttonOrder.disabled = true; //проверить, становится ли доступным при добавлении товаров в корзину
         }
     };
@@ -41,8 +42,12 @@ export class Basket extends ViewComponent<IBasketView> {
         //оформить в специальную функцию, ее результатом будет строка с разбитыми цифрами
         //преобразовать в отображении карточки и в оповещении об успешном заказе
         const tensThousands = Math.floor(totalPrice / 10000);
-        if (tensThousands) {
-            this._total.textContent = `${String(Math.floor(totalPrice / 1000))} ${String(totalPrice % 1000)} синапсов`;
+        if (Math.floor(totalPrice / 10000)) {
+            if (!(totalPrice % 1000)) {
+                this._total.textContent = `${String(Math.floor(totalPrice / 1000))} 000 синапсов`;
+            } else {
+                this._total.textContent = `${String(Math.floor(totalPrice / 1000))} ${String(totalPrice % 1000)} синапсов`;
+            }
         } else {
             this._total.textContent = `${String(totalPrice)} синапсов`;
         }

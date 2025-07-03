@@ -1,13 +1,17 @@
 import { ApiForApp } from './components/ApiForApp';
 import { Api } from './components/base/api';
 import { EventEmitter, IEvents } from './components/base/events';
+import { Basket } from './components/Basket';
 import { Card } from './components/Card';
 import { CardsContainer } from './components/CardsContainer';
 import { CardsData } from './components/CardsData';
+import { Form } from './components/Form';
+import { Modal } from './components/Modal';
+import { OrderSuccess } from './components/OrderSuccess';
 import { Page } from './components/Page';
 import { UserData } from './components/UserData';
 import './scss/styles.scss';
-import { TPayMethod } from './types';
+import { ICard, IOrderResult, TPayMethod, TUserContact, TUserPayAddress } from './types';
 import { API_URL, CDN_URL, settings } from './utils/constants';
 import { cloneTemplate } from './utils/utils';
 
@@ -122,19 +126,38 @@ const cardTemplate: HTMLTemplateElement = document.querySelector('#card-catalog'
 const cardModalTemplate: HTMLTemplateElement = document.querySelector('#card-preview');
 const cardBasketTemplate: HTMLTemplateElement = document.querySelector('#card-basket');
 
-//Темплейт модального окна
-
-//Темплейт форм и подтверждения
-
-//Темплейт корзины
-
 //Куда встраивать карточку
-const mainSection: HTMLElement = document.querySelector('.gallery');
-const modalPopup: HTMLDivElement = document.querySelector('.modal');
-const mainPage: HTMLBodyElement = document.querySelector('.page');
+const mainSection: HTMLElement = document.querySelector('.gallery');//секция main основной страницы
+const modalPopup: HTMLDivElement = document.querySelector('.modal');//модальное окно, в котором будет выводдиться все
+const modalPopupContent: HTMLDivElement = modalPopup.querySelector('.modal__content');//куда вставлять контент модального окна
+const mainPage: HTMLBodyElement = document.querySelector('.page');//body
 //const popupContent: HTMLDivElement = modalPopup.querySelector('.modal__content');
 
+//Клонируем все необходимые темплейты
+//Темплейты карточки
+const templateCardCatalog = cloneTemplate(document.querySelector('#card-catalog') as HTMLTemplateElement);
+const templateCardModal = cloneTemplate(document.querySelector('#card-preview') as HTMLTemplateElement);
+const templateCardBasket = cloneTemplate(document.querySelector('#card-basket') as HTMLTemplateElement);
+//Темплейт корзины
+const templateBasketModal = cloneTemplate(document.querySelector('#basket') as HTMLTemplateElement);
+//Темплейт форм и подтверждения
+const templateOrderPay = cloneTemplate(document.querySelector('#order') as HTMLTemplateElement) as HTMLFormElement;
+const templateOrderContacts = cloneTemplate(document.querySelector('#contacts') as HTMLTemplateElement) as HTMLFormElement;
+const templateSuccess = cloneTemplate(document.querySelector('#success') as HTMLTemplateElement);
+
 events.onAll((evt) => {console.log(evt.eventName, evt.data)});
+
+//Создаем необходимые классы для отображения
+const page = new Page(mainPage, events);
+const modal = new Modal(modalPopup, events);
+const basket = new Basket(templateBasketModal, events);
+//Будут нужны в других местах, но пока пусть будут здесь
+const cardModal = new Card(templateCardModal, events);
+const cardBasket = new Card(templateCardBasket, events);
+const orderSuccess = new OrderSuccess(templateSuccess, events);
+const formPay = new Form(templateOrderPay, events);
+const formContacts = new Form(templateOrderContacts, events);
+
 
 //cardsData.cards = cardsArrayForTest;
 //const cardForTest = cardsData.getCard('412bcf81-7e75-4e70-bdb9-d3c73c9803b7');
@@ -147,7 +170,7 @@ events.onAll((evt) => {console.log(evt.eventName, evt.data)});
 //cardArr.push(card.render(cardsArrayForTest[0]));
 //cardArr.push(card2.render(cardsArrayForTest[2]));
 //const cardsContainer = new CardsContainer(mainSection);
-const page = new Page(mainPage, events);
+
 //cardsContainer.render({cardsCatalog: cardArr});
 
 //card.title = cardForTest.title;
@@ -196,7 +219,166 @@ events.on('cardData:loaded', () => {
     });
 
     page.render({gallery: cardElements,
-        counter: userData.getUserBasket().items.length ?? 0,
+        counter: userData.getUserBasketProducts().length ?? 0,
         locked: false
     });
+
 });
+
+//попробуем открыть попап с карточкой
+events.on('cardItem:select', (event: {cardId: string}) => {
+    const cardPreviewElement = new Card(cloneTemplate(cardModalTemplate), events);
+    const renderCard = cardsData.getCard(event.cardId);
+    const isBasket = userData.getUserBasketProducts().some((productId) => productId === event.cardId);
+    const isPriceless = renderCard.price === null;
+    modal.render({content: cardPreviewElement.render(renderCard, isBasket, isPriceless)});
+    //modal.open();
+});
+
+// Блокируем и разблокируем прокрутку страницы, когда окрывается / закрывается модальное окно
+events.on('modal:opened', () => {
+    page.render({locked: true});
+});
+
+events.on('modal:closed', () => {
+    page.render({locked: false});
+});
+
+//добавляем и убираем товар по кнопке в модальном окне товара    
+events.on('cardButtonModal:click', (dataCardElement: {card: Card}) => {
+    switch (dataCardElement.card.getCardButtonText()) {
+        case 'В корзину': userData.addProductToBasket(dataCardElement.card.id);
+            dataCardElement.card.render({}, true);
+            break;
+        case 'Удалить из корзины': userData.deleteProductFromBasket(dataCardElement.card.id);
+            dataCardElement.card.render({}, false);
+            break;
+    }
+    page.render({counter: userData.getUserBasketProducts().length});
+});
+
+//функция для рендера корзины, можно использовать при открытии и удалении товаров, если находишься в корзине
+function reRenderBasket() {
+    const productElements = userData.getUserBasketProducts().map((productId, productIndex) => {
+        const productItem = new Card(cloneTemplate(cardBasketTemplate), events);
+        return productItem.render(cardsData.getCard(productId), false, false, productIndex + 1);
+    });
+
+    modal.render({
+        content: basket.render({cards: productElements,
+            total: cardsData.getTotalPrice(userData.getUserBasketProducts()),
+        }),
+    });
+};
+
+//убираем товар по иконке удаления в корзине
+events.on('cardButtonDelete:click', (dataCardElement: {card: Card}) => {
+    userData.deleteProductFromBasket(dataCardElement.card.id);
+    reRenderBasket();
+    page.render({counter: userData.getUserBasketProducts().length});
+});
+
+//попробуем открыть корзину с товарами
+events.on('basket:open', () => {
+    reRenderBasket();
+    //page.render()
+});
+
+events.on('basket:change', () => {
+    //reRenderBasket();
+    page.render({counter: userData.getUserBasketProducts().length});
+});
+
+//Открываем формочку "Способ оплаты и адрес" по кнопке "Оформить" из корзины
+events.on('basket:placed', () => {
+    //массив с id товаров в объекте с данными пользователя уже заполнен, а общей стоимости корзины еще нет
+    userData.total = cardsData.getTotalPrice(userData.getUserBasketProducts());
+    //Кнопка Оформить сразу ведет к открытию модалки с формой
+    modal.render({
+        content: formPay.render({valid: false,
+            errors: '*Заполните данные',
+        }),
+    });
+
+    const orderPayment: TUserPayAddress = {payment: null, address: ''};
+
+    events.on('orderpayment:input', (data: {payment: string}) => {
+        orderPayment.payment = data.payment as TPayMethod;
+        userData.checkUserValidation(orderPayment);
+    });
+
+    events.on('order:input', (data: {field: string, value: string}) => {
+        orderPayment.address = data.value;
+        userData.checkUserValidation(orderPayment);
+    });
+
+    events.on('formOrder:change', (validation: {validStatus: boolean, errors: string}) => {
+        formPay.render({valid: validation.validStatus,
+            errors: validation.errors,
+        });
+    });
+
+    events.on('order:submit', (payData: TUserPayAddress) => {
+        userData.setUserInfo(payData);
+        formPay.clearForm();
+        //console.log(userData.getUserOrderInfo());
+        modal.render({
+            content: formContacts.render({valid: false,
+                errors: '*Заполните данные',
+            }),
+        });
+
+        const orderContacts: TUserContact = {email: '', phone: ''};
+        events.on('contacts:input', (data: {field: string, value: string}) => {
+            //const inputData = {[data.field]};
+            if (data.value) {
+                Object.assign(orderContacts, {[data.field]: data.value});
+            } else {
+                const field = data.field as keyof TUserContact;
+                orderContacts[field] = '';
+            }
+            
+            userData.checkUserValidation(orderContacts);
+        });
+
+        events.on('formContacts:change', (validation: {validStatus: boolean, errors: string}) => {
+        formContacts.render({valid: validation.validStatus,
+            errors: validation.errors,
+        });
+
+        events.on('contacts:submit', (contactsData: TUserContact) => {
+            userData.setUserInfo(contactsData);
+            //console.log(userData.getUserOrderInfo());
+            formContacts.clearForm();
+
+            /*apiForApp.postOrderUserData(userData.getUserOrderInfo())
+                .then((orderResult: IOrderResult) => {
+                    events.emit('order:succes', {orderPrice: orderResult.total});
+                })
+                .catch((error) => {
+                    console.log(error);
+                });
+            */    
+            events.emit('order:succes', {orderPrice: userData.getUserOrderInfo().total});
+            events.on('order:succes', (price: {orderPrice: number}) => {
+                modal.render({
+                    content: orderSuccess.render({total: price.orderPrice}),
+                });
+
+                userData.clearUserBasket();
+            });    
+            
+            events.on('orderSuccess:close', () => {modal.close()})
+        });
+    });
+    });
+});
+
+/*1. Разобраться с отработкой событий форм
+2. с их очисткой и нормальной проверкой
+3. вынести в функцию штуку для отображения стоимости
+4. вместо генерации события при проверке формы просто возвращать объект и его обрабатывать?
+5. внимательно проверить, что сохраняется в товарах пользователя, а что нет при открытии / закрытии модалок
+6. сделать очистку формы по условию при закрытии модального окна, расширить метод close()
+7. когда переходим к новой форме старую модалку как бы закрываем
+*/

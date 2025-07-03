@@ -6,6 +6,7 @@ import { ViewComponent } from "./ViewComponent";
 interface ICardActions {
     onClick: (event: MouseEvent) => void;
 }
+//let isListenerAdd: boolean = false; //используется, чтобы поставить слушателя клика на кнопку в корзину в модалке только 1 раз и он не ставился при создании всего
 
 export class Card extends ViewComponent<ICard> {
     //protected container: HTMLElement;
@@ -15,9 +16,11 @@ export class Card extends ViewComponent<ICard> {
     protected _image?: HTMLImageElement;
     protected _category?: HTMLSpanElement;
     protected _description?: HTMLParagraphElement;
-    protected _button?: HTMLButtonElement;
+    protected _buttonModal?: HTMLButtonElement;
+    protected _buttonBasket?: HTMLButtonElement;
     protected _basketItem?: HTMLSpanElement;
     protected events: IEvents;
+    protected cardId: string;
 
     //При создании экземпляра карточки необходимо передавать клон темплейта сразу
     constructor(protected container: HTMLElement, events: IEvents, actions?: ICardActions) {
@@ -34,16 +37,22 @@ export class Card extends ViewComponent<ICard> {
         this._image = container.querySelector('.card__image');
         this._category = container.querySelector('.card__category');
         this._description = container.querySelector('.card__text');
-        this._button = container.querySelector('.card__button');
+        this._buttonModal = container.querySelector('.card__row .card__button');
+        this._buttonBasket = container.querySelector('.basket__item-delete');
         this._basketItem = container.querySelector('.basket__item-index');
 
         //if (actions?.onClick) {
-            if (this._button) { //если в разметке карточки есть кнопка, то будем слушать клик по ней
+            if (this._buttonModal) { //если в разметке карточки есть кнопка, то будем слушать клик по ней
                 //this._button.addEventListener('click', actions.onClick);
-                this._button.addEventListener('click', () => this.events.emit('card_button:click', {card: this}))
+                //if (!isListenerAdd) {
+                    this._buttonModal.addEventListener('click', () => this.events.emit('cardButtonModal:click', {card: this}));
+                    //isListenerAdd = true;
+                //}
+                } else if(this._buttonBasket) { //чтобы слушатель клика не навешивался на кнопку дважды при создании экзмепляра карточки в попае и экземпляра в корзине
+                this._buttonBasket.addEventListener('click', () => this.events.emit('cardButtonDelete:click', {card: this}));
             } else { //если в разметке карточки нет кнопки, то слушаем клик по всей карточке
                 //container.addEventListener('click', actions.onClick);
-                container.addEventListener('click', () => this.events.emit('card:select', {card: this}))
+                container.addEventListener('click', () => this.events.emit('cardItem:select', {cardId: this.id}))
             }
         //}
     }
@@ -67,13 +76,16 @@ export class Card extends ViewComponent<ICard> {
             } else {
                 this._price.textContent = `${String(priceValue)} синапсов`;
             }
+            //if (this._button) {
+            //    this.disableCardButton(false);
+            //}
         } else {
             this._price.textContent = 'Бесценно';
-            if (this._button) {
-                this.setCardButtonText('Не продается');
+            //if (this._button) {
+                //this.setCardButtonText('Не продается');
                 //this.disableCardButton.bind(this);
-                this.disableCardButton();
-            }
+                //this.disableCardButton(true);
+            //}
         }
     }
 
@@ -112,43 +124,56 @@ export class Card extends ViewComponent<ICard> {
     }
 
     set id(idValue: string) {
-        this.container.dataset.id = idValue;
+        this.cardId = idValue;
     }
 
     get id(): string {
-        return this.container.dataset.id || '';
+        return this.cardId || '';
     }
 
     set basketItem(itemValue: number) {
-        if (this._basketItem) {
-            this._basketItem.textContent = String(itemValue);
-        }
+        this._basketItem.textContent = String(itemValue);
     }
 
     //метод понадобиться, чтобы изменить надпись на кнопке развернутой карточки. Кнопка может получить надпись 'Удалить', 'В корзину' и 'Товар бесценен' в этом случае кнопка должна становиться неактивной
     setCardButtonText(textContent: string):void {
-        this._button.textContent = textContent;
+        this._buttonModal.textContent = textContent;
     }
 
     getCardButtonText():string {
-        if (this._button && !this._button.classList.contains('basket__item-delete')) {
-            return this._button.textContent;
+        if (this._buttonModal) {
+            return this._buttonModal.textContent;
         }
     }
 
     //заблокировать кнопку покупки для Бесценных товаров
-    disableCardButton():void {
-        this._button.disabled = true;
+    protected disableCardButton(disableValue: boolean):void {
+        this._buttonModal.disabled = disableValue;
     }
 
     //render(cardData?: Partial<ICard>): HTMLElement;
     //render(cardData: Partial<ICard>, cardInBasket: boolean): HTMLElement;
 
-    render(cardData: Partial<ICard> | undefined, cardInBasket: boolean = false/*, itemBasket: number = 0*/) {
+    render(cardData: Partial<ICard> | undefined, cardInBasket: boolean = false, cardPriceless: boolean = false, itemBasket: number = 0) {
         if (!cardData) return this.container;
         
-        if (cardInBasket && this._button && !this._button.classList.contains('basket__item-delete')) {
-            this.setCardButtonText('Удалить из корзины');
+        if (this._buttonModal) {
+            if (cardInBasket) {
+                this.setCardButtonText('Удалить из корзины');
+                this.disableCardButton(false);
+            } else {
+                if (cardPriceless) {
+                    this.setCardButtonText('Не продается');
+                    this.disableCardButton(true);
+                } else {
+                    this.setCardButtonText('В корзину');
+                    this.disableCardButton(false);
+                }
+            }   
+        }
+
+        if (this._basketItem) {
+            this.basketItem = itemBasket;
         }
         //Object.assign(this, cardData);
         /*if (itemBasket) {
