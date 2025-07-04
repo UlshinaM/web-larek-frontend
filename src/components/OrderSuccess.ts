@@ -1,3 +1,4 @@
+import { stringifyPrice } from "../utils/utils";
 import { IEvents } from "./base/events";
 import { ViewComponent } from "./ViewComponent";
 
@@ -24,11 +25,6 @@ export class OrderSuccess extends ViewComponent<IOrderSuccess> {
     }
 
     set total(totalPrice: number) {
-        const tensThousands = Math.floor(totalPrice / 10000);
-        if (tensThousands) {
-            this._orderPayTotal.textContent = `Списано ${String(Math.floor(totalPrice / 1000))} ${String(totalPrice % 1000)} синапсов`;
-        } else {
-            this._orderPayTotal.textContent = `Списано ${String(totalPrice)} синапсов`;
-        }
+        this._orderPayTotal.textContent = `${stringifyPrice(totalPrice)}`;
     }
 }

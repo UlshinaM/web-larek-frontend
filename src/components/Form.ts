@@ -1,11 +1,15 @@
 import { TPayMethod } from "../types";
+import { isTPayMethod } from "../utils/utils";
 import { IEvents } from "./base/events";
 import { ViewComponent } from "./ViewComponent";
 
 interface IFormState {
     valid: boolean;
     errors: string;
-}
+    activeButton: string;
+};
+
+//let isEventListener: boolean = false;
 
 export class Form<T> extends ViewComponent<IFormState> {
     protected _submitButton: HTMLButtonElement;
@@ -26,17 +30,19 @@ export class Form<T> extends ViewComponent<IFormState> {
         this._submitButton = container.querySelector('.order__button');
         this._errors = container.querySelector('.form__errors');
 
+        this.errors = '';
+
         this._paymentButton.forEach((payButton) => {
             payButton.addEventListener('click', (evt) => {
                 const target = evt.target as HTMLButtonElement;
                 //добавить выбранной по target кнопке стилей
-                target.classList.add('button_alt-active');
-                this._payment = target.getAttribute('name') as TPayMethod;
+                //target.classList.add('button_alt-active');
+                if (isTPayMethod(target.getAttribute('name'))) {
+                    this._payment = target.getAttribute('name') as TPayMethod;
+                }
                 this.events.emit(`${this.formName}payment:input`, {payment: target.getAttribute('name')});
             });
         });
-
-        this.errors = '';
 
         this.container.addEventListener('submit', (evt) => {
             evt.preventDefault();
@@ -53,7 +59,6 @@ export class Form<T> extends ViewComponent<IFormState> {
 
     set errors(errorMessage: string) {
         this._errors.textContent = errorMessage;
-        //возможно, понадобятся стили
     }
 
     set valid(validationResult: boolean) {
@@ -62,6 +67,16 @@ export class Form<T> extends ViewComponent<IFormState> {
         if (validationResult) {
             this.errors = '';
         }
+    }
+
+    set activeButton(buttonName: string) {
+        this._paymentButton.forEach((payButton) => {
+            if (payButton.name === buttonName) {
+                payButton.classList.add('button_alt-active');
+            } else {
+                payButton.classList.remove('button_alt-active');
+            }
+        });
     }
 
     protected getInputValues(): object {

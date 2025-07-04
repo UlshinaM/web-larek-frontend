@@ -1,10 +1,16 @@
 import { ICard } from "../types";
-import { cloneTemplate, ensureElement } from "../utils/utils";
+import { cloneTemplate, ensureElement, stringifyPrice } from "../utils/utils";
 import { IEvents } from "./base/events";
 import { ViewComponent } from "./ViewComponent";
 
 interface ICardActions {
     onClick: (event: MouseEvent) => void;
+}
+
+interface IAdditionalSettings {
+    cardInBasket: boolean, 
+    cardPriceless: boolean, 
+    itemBasket: number,
 }
 //let isListenerAdd: boolean = false; //используется, чтобы поставить слушателя клика на кнопку в корзину в модалке только 1 раз и он не ставился при создании всего
 
@@ -25,11 +31,8 @@ export class Card extends ViewComponent<ICard> {
     //При создании экземпляра карточки необходимо передавать клон темплейта сразу
     constructor(protected container: HTMLElement, events: IEvents, actions?: ICardActions) {
         super(container);
-        
         this.events = events;
         
-        //this.container = cloneTemplate(template); //в этом элементе будет либо gallery__item, либо card_full, либо card_compact было до ViewComponent
-
         //в зависимости от места отображения заголовок - это разные теги
         this._title = ensureElement<HTMLElement>('.card__title', container);
         this._price = ensureElement<HTMLSpanElement>('.card__price', container);
@@ -41,20 +44,13 @@ export class Card extends ViewComponent<ICard> {
         this._buttonBasket = container.querySelector('.basket__item-delete');
         this._basketItem = container.querySelector('.basket__item-index');
 
-        //if (actions?.onClick) {
-            if (this._buttonModal) { //если в разметке карточки есть кнопка, то будем слушать клик по ней
-                //this._button.addEventListener('click', actions.onClick);
-                //if (!isListenerAdd) {
-                    this._buttonModal.addEventListener('click', () => this.events.emit('cardButtonModal:click', {card: this}));
-                    //isListenerAdd = true;
-                //}
-                } else if(this._buttonBasket) { //чтобы слушатель клика не навешивался на кнопку дважды при создании экзмепляра карточки в попае и экземпляра в корзине
-                this._buttonBasket.addEventListener('click', () => this.events.emit('cardButtonDelete:click', {card: this}));
-            } else { //если в разметке карточки нет кнопки, то слушаем клик по всей карточке
-                //container.addEventListener('click', actions.onClick);
-                container.addEventListener('click', () => this.events.emit('cardItem:select', {cardId: this.id}))
-            }
-        //}
+        if (this._buttonModal) { //если в разметке карточки есть кнопка, то будем слушать клик по ней
+            this._buttonModal.addEventListener('click', () => this.events.emit('cardButtonModal:click', {card: this}));
+        } else if(this._buttonBasket) { //чтобы слушатель клика не навешивался на кнопку дважды при создании экзмепляра карточки в попае и экземпляра в корзине
+            this._buttonBasket.addEventListener('click', () => this.events.emit('cardButtonDelete:click', {card: this/*cardId: this.id, cardElement: this.container*/}));
+        } else { //если в разметке карточки нет кнопки, то слушаем клик по всей карточке
+            container.addEventListener('click', () => this.events.emit('cardItem:select', {cardId: this.id}))
+        }
     }
 
     set title(titleValue: string) {
@@ -64,38 +60,17 @@ export class Card extends ViewComponent<ICard> {
         }
     }
 
-    /*get title(): string {
-        return this._title.textContent || '';
-    }*/
-
     set price(priceValue: number | null) {
         if (priceValue) {
-            const tensThousands = Math.floor(priceValue / 10000);
-            if (tensThousands) {
-                this._price.textContent = `${String(tensThousands * 10)} 000 синапсов`;
-            } else {
-                this._price.textContent = `${String(priceValue)} синапсов`;
-            }
-            //if (this._button) {
-            //    this.disableCardButton(false);
-            //}
+            this._price.textContent = `${stringifyPrice(priceValue)}`;
         } else {
             this._price.textContent = 'Бесценно';
-            //if (this._button) {
-                //this.setCardButtonText('Не продается');
-                //this.disableCardButton.bind(this);
-                //this.disableCardButton(true);
-            //}
         }
     }
 
-    /*get price(): string {
-        return this._price.textContent || '';
-    }*/
     set image(linkValue: string) {
         if (this._image) {
             this._image.src = linkValue;
-            //this._image.alt = this.title; значение атрибута ставится раньше, чем меняется заголовок карточки, из-за этого описание неверное
         }
     }
 
@@ -152,17 +127,17 @@ export class Card extends ViewComponent<ICard> {
     }
 
     //render(cardData?: Partial<ICard>): HTMLElement;
-    //render(cardData: Partial<ICard>, cardInBasket: boolean): HTMLElement;
+    //render(cardData: Partial<ICard>, additionalSettings: Partial<IAdditionalSettings>): HTMLElement;
 
-    render(cardData: Partial<ICard> | undefined, cardInBasket: boolean = false, cardPriceless: boolean = false, itemBasket: number = 0) {
+    render(cardData?: Partial<ICard>, additionalSettings?: Partial<IAdditionalSettings>) {
         if (!cardData) return this.container;
         
         if (this._buttonModal) {
-            if (cardInBasket) {
+            if (additionalSettings.cardInBasket) {
                 this.setCardButtonText('Удалить из корзины');
                 this.disableCardButton(false);
             } else {
-                if (cardPriceless) {
+                if (additionalSettings.cardPriceless) {
                     this.setCardButtonText('Не продается');
                     this.disableCardButton(true);
                 } else {
@@ -172,15 +147,10 @@ export class Card extends ViewComponent<ICard> {
             }   
         }
 
-        if (this._basketItem) {
-            this.basketItem = itemBasket;
+        if (this._basketItem && additionalSettings.itemBasket) {
+            this.basketItem = additionalSettings.itemBasket;
         }
-        //Object.assign(this, cardData);
-        /*if (itemBasket) {
-            this.basketItem = itemBasket;
-            добавление порядкового номера элементу списка товара в корзине
-        }*/
-        //return this.container;
+
         return super.render(cardData);
     }
 }

@@ -1,6 +1,22 @@
+import { TPayMethod } from "../types";
+
 export function pascalToKebab(value: string): string {
     return value.replace(/([a-z0–9])([A-Z])/g, "$1-$2").toLowerCase();
 }
+
+//будем проверрять принадлежность к типу
+export function isTPayMethod(value: any): value is TPayMethod {
+  return value === 'card' || value === 'cash';
+};
+
+//Для красивого отображения стоимости
+export function stringifyPrice(price: number): string {
+    return Math.floor(price / 10000) ? 
+        (!(price % 1000)) ? 
+            `${String(Math.floor(price / 1000))} 000 синапсов` : 
+            `${String(Math.floor(price / 1000))} ${String(price % 1000)} синапсов`
+        : `${String(price)} синапсов`;
+};
 
 export function isSelector(x: any): x is string {
     return (typeof x === "string") && x.length > 1;

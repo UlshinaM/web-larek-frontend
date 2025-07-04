@@ -43,6 +43,4 @@ export class Page extends ViewComponent<IPage> {
             this._wrapper.classList.remove('page__wrapper_locked');
         }
     }
-
-    //render наследуется от родителя, метод модифицировать не надо
 }

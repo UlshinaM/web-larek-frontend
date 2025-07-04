@@ -1,4 +1,4 @@
-import { createElement } from "../utils/utils";
+import { createElement, stringifyPrice } from "../utils/utils";
 import { IEvents } from "./base/events";
 import { ViewComponent } from "./ViewComponent";
 
@@ -39,17 +39,6 @@ export class Basket extends ViewComponent<IBasketView> {
     };
 
     set total(totalPrice: number) {
-        //оформить в специальную функцию, ее результатом будет строка с разбитыми цифрами
-        //преобразовать в отображении карточки и в оповещении об успешном заказе
-        const tensThousands = Math.floor(totalPrice / 10000);
-        if (Math.floor(totalPrice / 10000)) {
-            if (!(totalPrice % 1000)) {
-                this._total.textContent = `${String(Math.floor(totalPrice / 1000))} 000 синапсов`;
-            } else {
-                this._total.textContent = `${String(Math.floor(totalPrice / 1000))} ${String(totalPrice % 1000)} синапсов`;
-            }
-        } else {
-            this._total.textContent = `${String(totalPrice)} синапсов`;
-        }
+        this._total.textContent = `${stringifyPrice(totalPrice)}`;
     }
 }
