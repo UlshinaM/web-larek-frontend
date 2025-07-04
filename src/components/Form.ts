@@ -35,8 +35,6 @@ export class Form<T> extends ViewComponent<IFormState> {
         this._paymentButton.forEach((payButton) => {
             payButton.addEventListener('click', (evt) => {
                 const target = evt.target as HTMLButtonElement;
-                //добавить выбранной по target кнопке стилей
-                //target.classList.add('button_alt-active');
                 if (isTPayMethod(target.getAttribute('name'))) {
                     this._payment = target.getAttribute('name') as TPayMethod;
                 }
@@ -98,17 +96,4 @@ export class Form<T> extends ViewComponent<IFormState> {
         return this.container;
 
     }
-
-    clearForm() {
-        this.container.reset();
-        if (this._payment) {
-            //убрать у выбранной кнопки стили по toggle по name из _payment
-            this._paymentButton.forEach((paymentButton) => {
-                if (paymentButton.classList.contains('button_alt-active')) {
-                    paymentButton.classList.remove('button_alt-active');
-                }
-            });
-            this._payment = null;
-        }
-    };
 }

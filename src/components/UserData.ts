@@ -14,7 +14,7 @@ export class UserData implements IUserData { //все методы на "удо�
         this.events = events;
     }
 
-    setUserInfo(userInfo: Partial<TUserPayAddress> & Partial<TUserContact>): void {
+    setUserInfo(userInfo: Partial<IUser>): void {
         Object.assign(this, userInfo);
     }
 

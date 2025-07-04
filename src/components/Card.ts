@@ -3,10 +3,6 @@ import { cloneTemplate, ensureElement, stringifyPrice } from "../utils/utils";
 import { IEvents } from "./base/events";
 import { ViewComponent } from "./ViewComponent";
 
-interface ICardActions {
-    onClick: (event: MouseEvent) => void;
-}
-
 interface IAdditionalSettings {
     cardInBasket: boolean, 
     cardPriceless: boolean, 
@@ -29,7 +25,7 @@ export class Card extends ViewComponent<ICard> {
     protected cardId: string;
 
     //При создании экземпляра карточки необходимо передавать клон темплейта сразу
-    constructor(protected container: HTMLElement, events: IEvents, actions?: ICardActions) {
+    constructor(protected container: HTMLElement, events: IEvents) {
         super(container);
         this.events = events;
         
@@ -125,9 +121,6 @@ export class Card extends ViewComponent<ICard> {
     protected disableCardButton(disableValue: boolean):void {
         this._buttonModal.disabled = disableValue;
     }
-
-    //render(cardData?: Partial<ICard>): HTMLElement;
-    //render(cardData: Partial<ICard>, additionalSettings: Partial<IAdditionalSettings>): HTMLElement;
 
     render(cardData?: Partial<ICard>, additionalSettings?: Partial<IAdditionalSettings>) {
         if (!cardData) return this.container;
