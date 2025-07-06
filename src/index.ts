@@ -47,7 +47,6 @@ const modal = new Modal(modalPopup, events);
 apiForApp.getCards()
     .then((cardsArray) => {
         cardsData.cards = cardsArray;
-        events.emit('cardData:loaded');
     })
     .catch((error) => {
         console.log(error);
@@ -86,14 +85,13 @@ events.on('modal:closed', () => {
 
 //добавляем и убираем товар по кнопке в модальном окне товара    
 events.on('cardButtonModal:click', (dataCardElement: {card: Card}) => {
-    switch (dataCardElement.card.getCardButtonText()) {
-        case 'В корзину': userData.addProductToBasket(dataCardElement.card.id);
-            dataCardElement.card.render({}, {cardInBasket: true});
-            break;
-        case 'Удалить из корзины': userData.deleteProductFromBasket(dataCardElement.card.id);
-            dataCardElement.card.render({}, {cardInBasket: false});
-            break;
-    }
+    if (userData.getUserBasketProducts().some((productId) => productId === dataCardElement.card.id)) {
+        userData.deleteProductFromBasket(dataCardElement.card.id);
+        dataCardElement.card.render({}, {cardInBasket: false});
+    } else {
+        userData.addProductToBasket(dataCardElement.card.id);
+        dataCardElement.card.render({}, {cardInBasket: true});
+    };
     page.render({counter: userData.getUserBasketProducts().length});
 });
 
